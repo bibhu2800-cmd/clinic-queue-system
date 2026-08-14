@@ -1,9 +1,14 @@
 import json
 from typing import List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi.responses import RedirectResponse
 import redis.asyncio as redis
 
+
 app = FastAPI(title="Clinic OPD Queue Engine")
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/static/index.html")
 
 # Connect to Redis
 r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
