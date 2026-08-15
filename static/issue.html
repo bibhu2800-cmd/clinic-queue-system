@@ -882,14 +882,22 @@
        2. Initialization
        ------------------------------------------------------------------ */
     document.addEventListener('DOMContentLoaded', () => {
+      const defaultBaseUrl = window.location.origin === 'null' || window.location.protocol === 'file:' 
+        ? 'http://localhost:8000' 
+        : window.location.origin;
       const savedUrl = localStorage.getItem('kiosk_base_url');
-      if (savedUrl) {
+      if (savedUrl && savedUrl !== 'https://clinic-queue-system-fsud.onrender.com') {
         BASE_URL = savedUrl;
+      } else {
+        BASE_URL = defaultBaseUrl;
       }
       document.getElementById('baseUrlInput').value = BASE_URL;
 
       updateClock();
       setInterval(updateClock, 1000);
+
+      // Connect WebSocket for real-time queue position updates
+      connectWebSocket();
     });
 
     function updateClock() {
@@ -911,6 +919,67 @@
       localStorage.setItem('kiosk_base_url', BASE_URL);
       input.value = BASE_URL;
       alert('Server URL updated to: ' + BASE_URL);
+      if (ws) {
+        ws.close();
+      }
+    }
+
+    let ws;
+    function connectWebSocket() {
+      let wsUrl;
+      const cleanBase = BASE_URL.replace(/\/+$/, '');
+      if (cleanBase.startsWith('https://')) {
+        wsUrl = cleanBase.replace('https://', 'wss://') + '/ws';
+      } else if (cleanBase.startsWith('http://')) {
+        wsUrl = cleanBase.replace('http://', 'ws://') + '/ws';
+      } else {
+        wsUrl = 'ws://localhost:8000/ws';
+      }
+
+      console.log('Kiosk connecting WebSocket to:', wsUrl);
+      ws = new WebSocket(wsUrl);
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.event === "TOKEN_CALLED") {
+            const posElem = document.getElementById('modalQueuePosition');
+            if (posElem && posElem.textContent) {
+              const match = posElem.textContent.match(/#?(\d+)/);
+              if (match) {
+                let currentPos = parseInt(match[1], 10);
+                if (currentPos > 1) {
+                  currentPos -= 1;
+                  posElem.textContent = `#${currentPos} in line`;
+                  
+                  const waitElem = document.getElementById('modalWaitTime');
+                  if (waitElem) {
+                    waitElem.textContent = `~ ${currentPos * 5} mins`;
+                  }
+                } else if (currentPos === 1) {
+                  posElem.textContent = "Your turn! Please proceed.";
+                  posElem.style.color = "var(--cyan-primary)";
+                  const waitElem = document.getElementById('modalWaitTime');
+                  if (waitElem) {
+                    waitElem.textContent = "Now calling";
+                  }
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Error processing websocket message in kiosk:", err);
+        }
+      };
+
+      ws.onclose = () => {
+        console.log('Kiosk WebSocket disconnected, retrying in 5s...');
+        setTimeout(connectWebSocket, 5000);
+      };
+      
+      ws.onerror = (err) => {
+        console.error('Kiosk WebSocket error:', err);
+      };
     }
 
     /* ------------------------------------------------------------------
@@ -918,7 +987,8 @@
        ------------------------------------------------------------------ */
     async function issueToken(priority) {
       const cleanBase = BASE_URL.replace(/\/+$/, '');
-      const targetUrl = `${cleanBase}/tokens/issue?priority=${priority}`;
+      const pValue = (priority === true || priority === 'true') ? 'priority' : 'general';
+      const targetUrl = `${cleanBase}/tokens/issue?priority=${pValue}`;
 
       // Mandatory fetch call with ngrok bypass header
       const response = await fetch(targetUrl, {
@@ -960,7 +1030,7 @@
       try {
         const data = await issueToken(isPriority);
 
-        const tokenNum = data.token || data.token_number || data.number || data.id || (isPriority ? 'P-101' : 'A-101');
+        const tokenNum = data.token_id || data.token || data.token_number || data.number || data.id || (isPriority ? 'P-101' : 'A-101');
         const queuePos = data.queue_position ?? data.position ?? data.ahead ?? 3;
         const waitTime = data.estimated_wait ?? data.wait_time ?? (queuePos * 5 + ' mins');
 

@@ -23,7 +23,14 @@
     </div>
 
     <script>
-        const ws = new WebSocket("wss://clinic-queue-system-fsud.onrender.com/ws/queue");
+        let wsUrl;
+        if (window.location.protocol === 'file:') {
+            wsUrl = 'ws://localhost:8000/ws';
+        } else {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            wsUrl = `${protocol}//${window.location.host}/ws`;
+        }
+        const ws = new WebSocket(wsUrl);
 
         ws.onopen = () => {
             document.getElementById("status").innerText = "Live Updates Connected";

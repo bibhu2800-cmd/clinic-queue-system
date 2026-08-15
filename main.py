@@ -50,23 +50,33 @@ async def issue_token(priority: str = "general"):
     token_num = await r.incr("opd:token_counter")
     token_id = f"T-{token_num:03d}"
     
-    token_data = {
-        "token_id": token_id,
-        "priority": priority,
-        "status": "WAITING"
-    }
-
-    await r.hset(f"token:{token_id}", mapping=token_data)
-    
-    if priority.lower() == "priority":
-        await r.lpush("opd:queue:priority", token_id)
+    if priority.lower() in ("priority", "true"):
+        await r.rpush("opd:queue:priority", token_id)
     else:
         await r.rpush("opd:queue:general", token_id)
 
-    await manager.broadcast({
+    priority_len = await r.llen("opd:queue:priority")
+    general_len = await r.llen("opd:queue:general")
+
+    if priority.lower() in ("priority", "true"):
+        queue_position = priority_len
+    else:
+        queue_position = priority_len + general_len
+
+    token_data = {
+        "token_id": token_id,
+        "priority": priority,
+        "status": "WAITING",
+        "queue_position": queue_position,
+        "estimated_wait": f"{queue_position * 5} mins"
+    }
+
+    await r.hset(f"token:{token_id}", mapping=token_data)
+
+    await manager.broadcast(json.dumps({
         "event": "TOKEN_ISSUED",
         "token": token_data
-    })
+    }))
 
     return token_data
 
@@ -94,7 +104,29 @@ async def call_next_token(counter_id: int):
     }
 
     await manager.broadcast(json.dumps(payload))
-    return{"status":"success","data":payload}
+    return {"status":"success","data":payload}
+
+# Endpoint 4: Recall Token (Called by Doctor Console)
+@app.post("/tokens/recall")
+async def recall_token(token_id: str, counter_id: int):
+    # Verify token exists
+    token_exists = await r.exists(f"token:{token_id}")
+    if not token_exists:
+        raise HTTPException(status_code=404, detail=f"Token {token_id} not found.")
+
+    await r.hset(f"token:{token_id}", mapping={
+        "status": "CALLED",
+        "counter_id": str(counter_id)
+    })
+
+    payload = {
+        "event": "TOKEN_CALLED",
+        "token_id": token_id,
+        "counter_id": counter_id
+    }
+
+    await manager.broadcast(json.dumps(payload))
+    return {"status": "success", "data": payload}
 
 # Endpoint 3: Real-time WebSocket (Connected by Display Board)
 @app.websocket("/ws")

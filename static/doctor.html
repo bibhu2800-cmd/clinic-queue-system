@@ -559,7 +559,7 @@
 
     .secondary-controls-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 0.75rem;
     }
 
@@ -921,6 +921,13 @@
                 </svg>
                 <span>Skip / Hold</span>
               </button>
+
+              <button class="btn-glass-sec" id="btnCallSkipped" onclick="callSkippedToken()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                </svg>
+                <span>Call Skipped<span class="skipped-count"></span></span>
+              </button>
             </div>
           </div>
         </section>
@@ -1044,15 +1051,21 @@
      JavaScript Logic Integration
      ========================================================================== -->
   <script>
-    /* Configuration & State */
     let BASE_URL = 'https://clinic-queue-system-fsud.onrender.com';
     let currentCounterId = '1';
     let lastCalledTokenNum = '---';
 
     /* Initialization */
     document.addEventListener('DOMContentLoaded', () => {
+      const defaultBaseUrl = window.location.origin === 'null' || window.location.protocol === 'file:' 
+        ? 'http://localhost:8000' 
+        : window.location.origin;
       const savedUrl = localStorage.getItem('doctor_ngrok_url');
-      if (savedUrl) BASE_URL = savedUrl;
+      if (savedUrl && savedUrl !== 'https://clinic-queue-system-fsud.onrender.com') {
+        BASE_URL = savedUrl;
+      } else {
+        BASE_URL = defaultBaseUrl;
+      }
       document.getElementById('baseUrlInput').value = BASE_URL;
 
       const savedCounter = localStorage.getItem('doctor_counter_id');
@@ -1069,6 +1082,7 @@
       });
 
       logActivity('System initialized. Counter #' + currentCounterId + ' active.', 'system');
+      updateSkippedButtonCount();
     });
 
     /* Counter Control */
@@ -1132,10 +1146,17 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true'
           }
         });
 
         if (!response.ok) {
+          if (response.status === 404) {
+            updateTokenDisplay('---');
+            logActivity('Queue is empty. No patients waiting.', 'system');
+            setStatusPill('Connected', 'success');
+            return;
+          }
           throw new Error(`Server status ${response.status} (${response.statusText || 'Error'})`);
         }
 
@@ -1144,7 +1165,7 @@
 
         try {
           const data = JSON.parse(textResponse);
-          tokenNum = data.token ?? data.token_number ?? data.number ?? data.currentToken ?? (data.data && data.data.token) ?? data.id ?? data;
+          tokenNum = data.token_id ?? (data.data && data.data.token_id) ?? data.token ?? data.token_number ?? data.number ?? data.currentToken ?? (data.data && data.data.token) ?? data.id ?? (typeof data === 'string' ? data : '---');
         } catch (jsonErr) {
           tokenNum = textResponse.trim() || '---';
         }
@@ -1190,14 +1211,50 @@
     }
 
     /* Secondary Controls */
-    function recallCurrentToken() {
+    async function recallCurrentToken() {
       if (lastCalledTokenNum === '---') return;
+
+      const tagElem = document.getElementById('tokenStateTag');
+      if (tagElem && tagElem.textContent.trim() === 'Completed') {
+        logActivity(`Cannot recall: Patient #${lastCalledTokenNum} is already completed`, 'error');
+        return;
+      }
+
+      if (tagElem) {
+        tagElem.textContent = 'Calling Patient';
+        tagElem.style.background = 'rgba(56, 189, 248, 0.15)';
+        tagElem.style.color = 'var(--cyan-primary)';
+      }
+
       playAlertChime();
       const pod = document.getElementById('tokenPod');
       pod.classList.remove('glow-pulse');
       void pod.offsetWidth;
       pod.classList.add('glow-pulse');
-      logActivity(`Recalled Token #${lastCalledTokenNum}`, 'call');
+
+      const counterId = getCounterId();
+
+      try {
+        const cleanBase = BASE_URL.replace(/\/+$/, '');
+        const targetUrl = `${cleanBase}/tokens/recall?token_id=${encodeURIComponent(lastCalledTokenNum)}&counter_id=${encodeURIComponent(counterId)}`;
+
+        const response = await fetch(targetUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Recall status ${response.status}`);
+        }
+
+        logActivity(`Recalled Token #${lastCalledTokenNum}`, 'call');
+      } catch (err) {
+        console.error('Error in recallCurrentToken():', err);
+        logActivity(`Recall Error: ${err.message}`, 'error');
+      }
     }
 
     function markCompleted() {
@@ -1209,13 +1266,81 @@
       logActivity(`Completed Token #${lastCalledTokenNum}`, 'system');
     }
 
-    function skipToken() {
+    async function skipToken() {
       if (lastCalledTokenNum === '---') return;
+
       const tagElem = document.getElementById('tokenStateTag');
+      if (tagElem && tagElem.textContent.trim() === 'Completed') {
+        logActivity(`Cannot skip: Patient #${lastCalledTokenNum} is already completed`, 'error');
+        return;
+      }
+
       tagElem.textContent = 'On Hold';
       tagElem.style.background = 'rgba(245, 158, 11, 0.15)';
       tagElem.style.color = 'var(--amber-warning)';
       logActivity(`Skipped/Held Token #${lastCalledTokenNum}`, 'system');
+
+      // Add to skipped list in localStorage
+      let skippedList = JSON.parse(localStorage.getItem('doctor_skipped_tokens') || '[]');
+      if (!skippedList.includes(lastCalledTokenNum)) {
+        skippedList.push(lastCalledTokenNum);
+        localStorage.setItem('doctor_skipped_tokens', JSON.stringify(skippedList));
+      }
+      updateSkippedButtonCount();
+
+      // Automatically call next patient if available
+      await callNext();
+    }
+
+    async function callSkippedToken() {
+      let skippedList = JSON.parse(localStorage.getItem('doctor_skipped_tokens') || '[]');
+      if (skippedList.length === 0) {
+        logActivity("No skipped patients to call", "error");
+        return;
+      }
+
+      const tokenToCall = skippedList.pop(); // Pop LIFO (most recently skipped)
+      localStorage.setItem('doctor_skipped_tokens', JSON.stringify(skippedList));
+      updateSkippedButtonCount();
+
+      lastCalledTokenNum = tokenToCall;
+      updateTokenDisplay(tokenToCall);
+
+      const counterId = getCounterId();
+      try {
+        const cleanBase = BASE_URL.replace(/\/+$/, '');
+        const targetUrl = `${cleanBase}/tokens/recall?token_id=${encodeURIComponent(tokenToCall)}&counter_id=${encodeURIComponent(counterId)}`;
+
+        const response = await fetch(targetUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Recall status ${response.status}`);
+        }
+
+        logActivity(`Called Back Skipped Token #${tokenToCall}`, 'call');
+      } catch (err) {
+        console.error('Error calling back skipped token:', err);
+        logActivity(`Call Error: ${err.message}`, 'error');
+      }
+    }
+
+    function updateSkippedButtonCount() {
+      let skippedList = JSON.parse(localStorage.getItem('doctor_skipped_tokens') || '[]');
+      const btn = document.getElementById('btnCallSkipped');
+      if (btn) {
+        const countSpan = btn.querySelector('.skipped-count');
+        if (countSpan) {
+          countSpan.textContent = skippedList.length > 0 ? ` (${skippedList.length})` : '';
+        }
+        btn.disabled = skippedList.length === 0;
+        btn.style.opacity = skippedList.length === 0 ? '0.5' : '1';
+      }
     }
 
     /* Audio Alert Chime (Web Audio API Synthesizer) */
