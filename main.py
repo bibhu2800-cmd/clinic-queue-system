@@ -1,4 +1,5 @@
 import json
+import os
 from typing import List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -21,7 +22,8 @@ async def root():
     return RedirectResponse(url="/static/index.html")
 
 # Connect to Redis
-r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
+redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+r = redis.from_url(redis_url, decode_responses=True)
 
 # WebSocket Connection Manager
 class ConnectionManager:
@@ -36,12 +38,9 @@ class ConnectionManager:
         if websocket in self.active_connections:
             self.active_connections.remove(websocket)
 
-    async def broadcast(self, message: dict):
+    async def broadcast(self, message: str):
         for connection in self.active_connections:
-            try:
                 await connection.send_json(message)
-            except Exception:
-                pass
 
 manager = ConnectionManager()
 
@@ -94,11 +93,11 @@ async def call_next_token(counter_id: int):
         "counter_id": counter_id
     }
 
-    await manager.broadcast(payload)
+    await manager.broadcast(json.dumps(payload))
     return{"status":"success","data":payload}
 
 # Endpoint 3: Real-time WebSocket (Connected by Display Board)
-@app.websocket("/ws/queue")
+@app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
