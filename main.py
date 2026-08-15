@@ -16,7 +16,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.mount("/static", StaticFiles(directory="." ,html=True), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 @app.get("/")
 async def root():
     return RedirectResponse(url="/static/index.html")
