@@ -1340,13 +1340,42 @@
       }
     }
 
-    function markCompleted() {
+    async function markCompleted() {
       if (lastCalledTokenNum === '---') return;
+      const tokenNum = lastCalledTokenNum;
+
       const tagElem = document.getElementById('tokenStateTag');
-      tagElem.textContent = 'Completed';
-      tagElem.style.background = 'rgba(16, 185, 129, 0.15)';
-      tagElem.style.color = 'var(--emerald-success)';
-      logActivity(`Completed Token #${lastCalledTokenNum}`, 'system');
+      if (tagElem) {
+        tagElem.textContent = 'Completed';
+        tagElem.style.background = 'rgba(16, 185, 129, 0.15)';
+        tagElem.style.color = 'var(--emerald-success)';
+      }
+      logActivity(`Completed Token #${tokenNum}`, 'system');
+
+      const counterId = getCounterId();
+
+      try {
+        const cleanBase = BASE_URL.replace(/\/+$/, '');
+        const targetUrl = `${cleanBase}/tokens/complete?token_id=${encodeURIComponent(tokenNum)}&counter_id=${encodeURIComponent(counterId)}`;
+
+        const response = await fetch(targetUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`Complete status ${response.status}`);
+        }
+      } catch (err) {
+        console.error('Error in markCompleted():', err);
+        logActivity(`Complete Error: ${err.message}`, 'error');
+      }
+
+      // Automatically call next patient
+      await callNext();
     }
 
     async function skipToken() {

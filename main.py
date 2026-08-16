@@ -80,9 +80,26 @@ async def issue_token(priority: str = "general"):
 
     return token_data
 
+async def complete_active_token_on_counter(counter_id: int):
+    active_key = f"opd:counter:{counter_id}:active"
+    prev_token_id = await r.get(active_key)
+    if prev_token_id:
+        current_status = await r.hget(f"token:{prev_token_id}", "status")
+        if current_status == "CALLED":
+            await r.hset(f"token:{prev_token_id}", "status", "COMPLETED")
+            await manager.broadcast(json.dumps({
+                "event": "TOKEN_COMPLETED",
+                "token_id": prev_token_id,
+                "counter_id": counter_id
+            }))
+        await r.delete(active_key)
+
 # Endpoint 2: Call Next Token (Called by Doctor Console)
 @app.post("/tokens/next")
 async def call_next_token(counter_id: int):
+    # Complete previous patient first
+    await complete_active_token_on_counter(counter_id)
+
     # Try popping from priority queue first, fallback to general
     token_id = await r.lpop("opd:queue:priority")
     if not token_id:
@@ -94,8 +111,10 @@ async def call_next_token(counter_id: int):
     await r.hset(f"token:{token_id}", mapping={
         "status": "CALLED",
         "counter_id": str(counter_id)
-    }
-)
+    })
+
+    # Save the currently active token for this counter
+    await r.set(f"opd:counter:{counter_id}:active", token_id)
 
     payload = {
         "event": "TOKEN_CALLED",
@@ -106,6 +125,31 @@ async def call_next_token(counter_id: int):
     await manager.broadcast(json.dumps(payload))
     return {"status":"success","data":payload}
 
+# Endpoint 5: Complete Token (Called by Doctor Console or automatically)
+@app.post("/tokens/complete")
+async def complete_token(token_id: str, counter_id: int):
+    # Verify token exists
+    token_exists = await r.exists(f"token:{token_id}")
+    if not token_exists:
+        raise HTTPException(status_code=404, detail=f"Token {token_id} not found.")
+
+    await r.hset(f"token:{token_id}", "status", "COMPLETED")
+
+    # Clear active status for this counter if it matches
+    active_key = f"opd:counter:{counter_id}:active"
+    prev_token_id = await r.get(active_key)
+    if prev_token_id == token_id:
+        await r.delete(active_key)
+
+    payload = {
+        "event": "TOKEN_COMPLETED",
+        "token_id": token_id,
+        "counter_id": counter_id
+    }
+
+    await manager.broadcast(json.dumps(payload))
+    return {"status": "success", "data": payload}
+
 # Endpoint 4: Recall Token (Called by Doctor Console)
 @app.post("/tokens/recall")
 async def recall_token(token_id: str, counter_id: int):
@@ -114,10 +158,18 @@ async def recall_token(token_id: str, counter_id: int):
     if not token_exists:
         raise HTTPException(status_code=404, detail=f"Token {token_id} not found.")
 
+    # Complete the previously active token if it's different from the recalled one
+    active_key = f"opd:counter:{counter_id}:active"
+    prev_token_id = await r.get(active_key)
+    if prev_token_id and prev_token_id != token_id:
+        await complete_active_token_on_counter(counter_id)
+
     await r.hset(f"token:{token_id}", mapping={
         "status": "CALLED",
         "counter_id": str(counter_id)
     })
+
+    await r.set(active_key, token_id)
 
     payload = {
         "event": "TOKEN_CALLED",
@@ -127,6 +179,7 @@ async def recall_token(token_id: str, counter_id: int):
 
     await manager.broadcast(json.dumps(payload))
     return {"status": "success", "data": payload}
+
 
 # Endpoint 3: Real-time WebSocket (Connected by Display Board)
 @app.websocket("/ws")
