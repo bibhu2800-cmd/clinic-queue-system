@@ -287,6 +287,267 @@
             box-shadow: 0 0 15px rgba(245, 158, 11, 0.1);
         }
 
+        /* Emergency Active State on Call Card */
+        .active-call-card.emergency-mode {
+            border-color: rgba(239, 68, 68, 0.65);
+            background: radial-gradient(circle at 50% 30%, rgba(239, 68, 68, 0.18) 0%, rgba(15, 23, 42, 0.85) 75%);
+            box-shadow: 0 0 50px rgba(239, 68, 68, 0.35), inset 0 0 30px rgba(239, 68, 68, 0.15);
+            animation: emergencyPulseBorder 1.8s ease-in-out infinite alternate;
+        }
+
+        @keyframes emergencyPulseBorder {
+            0% {
+                border-color: rgba(239, 68, 68, 0.45);
+                box-shadow: 0 0 30px rgba(239, 68, 68, 0.25), inset 0 0 15px rgba(239, 68, 68, 0.1);
+            }
+            100% {
+                border-color: rgba(245, 158, 11, 0.85);
+                box-shadow: 0 0 60px rgba(239, 68, 68, 0.55), inset 0 0 35px rgba(245, 158, 11, 0.2);
+            }
+        }
+
+        /* Emergency Badge Pill */
+        .emergency-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.45rem 1.4rem;
+            border-radius: 9999px;
+            background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+            color: #fff;
+            font-size: 0.95rem;
+            font-weight: 800;
+            font-family: var(--font-mono);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            box-shadow: 0 0 25px rgba(239, 68, 68, 0.7);
+            margin-bottom: 0.75rem;
+            animation: emergencyBadgePulse 1s ease-in-out infinite alternate;
+        }
+
+        .emergency-badge svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2.5;
+            animation: emergencySirenSpin 1.5s linear infinite;
+        }
+
+        @keyframes emergencyBadgePulse {
+            0% { transform: scale(1); box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+            100% { transform: scale(1.04); box-shadow: 0 0 30px rgba(239, 68, 68, 0.85); }
+        }
+
+        @keyframes emergencySirenSpin {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-15deg); }
+            75% { transform: rotate(15deg); }
+        }
+
+        .token-display.emergency-text {
+            background: linear-gradient(135deg, #ff4444 0%, #f59e0b 50%, #ef4444 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: emergencyGlowPulse 1.2s ease-in-out infinite alternate;
+        }
+
+        @keyframes emergencyGlowPulse {
+            0% { filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.4)); }
+            100% { filter: drop-shadow(0 0 40px rgba(245, 158, 11, 0.7)); }
+        }
+
+        .counter-badge.emergency-counter {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.6);
+            color: #fca5a5;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .sound-waves.emergency span {
+            background-color: #ef4444 !important;
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+        }
+
+        /* Queue Delay Alert Banner */
+        .delay-banner-card {
+            padding: 1.5rem 2rem;
+            background: radial-gradient(circle at 10% 50%, rgba(245, 158, 11, 0.15) 0%, rgba(15, 23, 42, 0.9) 80%);
+            border: 1px solid rgba(245, 158, 11, 0.45);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 35px rgba(245, 158, 11, 0.2);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: slideDownBanner 0.4s ease forwards;
+            margin-bottom: 0.5rem;
+        }
+
+        @keyframes slideDownBanner {
+            0% { opacity: 0; transform: translateY(-15px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .delay-banner-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .delay-left {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .delay-icon-box {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--amber-warning);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.25);
+            flex-shrink: 0;
+            animation: pulseHazard 1.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulseHazard {
+            0% { transform: scale(1); box-shadow: 0 0 10px rgba(245, 158, 11, 0.2); }
+            100% { transform: scale(1.06); box-shadow: 0 0 25px rgba(245, 158, 11, 0.5); }
+        }
+
+        .delay-icon-box svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        .delay-text-area {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .delay-header-line {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .delay-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            font-family: var(--font-mono);
+            letter-spacing: -0.01em;
+            color: #fbbf24;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .delay-tag {
+            padding: 0.2rem 0.75rem;
+            border-radius: 9999px;
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .delay-desc {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .delay-desc strong {
+            color: var(--text-main);
+        }
+
+        .delay-countdown-box {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: center;
+            min-width: 170px;
+            padding: 0.6rem 1.2rem;
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 14px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .countdown-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            font-weight: 700;
+        }
+
+        .countdown-digits {
+            font-size: 1.85rem;
+            font-weight: 900;
+            font-family: var(--font-mono);
+            color: #f59e0b;
+            letter-spacing: 0.05em;
+            line-height: 1.1;
+            margin: 0.2rem 0;
+            text-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .countdown-status {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .delay-progress-container {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 9999px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .delay-progress-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #f59e0b, #ef4444);
+            border-radius: 9999px;
+            transition: width 1s linear;
+        }
+
+        /* History emergency tag */
+        .history-tag-emergency {
+            display: inline-block;
+            font-size: 0.65rem;
+            font-weight: 800;
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            padding: 0.15rem 0.5rem;
+            border-radius: 6px;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-emergency-test {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+            box-shadow: 0 4px 14px rgba(220, 38, 38, 0.4) !important;
+        }
+        .btn-emergency-test:hover {
+            box-shadow: 0 6px 20px rgba(220, 38, 38, 0.6) !important;
+        }
+
         /* Sound Waves Visualizer */
         .sound-waves {
             display: flex;
@@ -813,18 +1074,60 @@
             </div>
         </header>
 
+        <!-- Live Emergency Queue Delay Alert Banner (Hidden by default, shown during emergency) -->
+        <section id="delayBanner" class="glass-card delay-banner-card" style="display: none;">
+            <div class="delay-banner-content">
+                <div class="delay-left">
+                    <div class="delay-icon-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                    </div>
+                    <div class="delay-text-area">
+                        <div class="delay-header-line">
+                            <span class="delay-title" id="delayBannerTitle">🚨 EMERGENCY IN PROGRESS — NORMAL QUEUE DELAYED</span>
+                            <span class="delay-tag" id="delayBannerTag">Est. Delay: ~5–10 Mins</span>
+                        </div>
+                        <p class="delay-desc" id="delaySubtext">
+                            Doctor Counter <strong id="delayCounterNum">#1</strong> is currently attending an urgent emergency patient. Regular token calls are delayed by ~5 to 10 minutes.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="delay-countdown-box">
+                    <span class="countdown-label">Estimated Resumption</span>
+                    <span class="countdown-digits" id="delayCountdownText">08:00</span>
+                    <span class="countdown-status" id="delayCountdownStatus">Waiting for normal queue</span>
+                </div>
+            </div>
+
+            <div class="delay-progress-container">
+                <div class="delay-progress-fill" id="delayProgressBar" style="width: 100%;"></div>
+            </div>
+        </section>
+
         <!-- Main Display Grid -->
         <main class="board-grid">
             
             <!-- Left Side: Large Active Token Display -->
-            <section class="glass-card active-call-card">
-                <div class="call-header">Current Patient Call</div>
+            <section class="glass-card active-call-card" id="activeCallCard">
+                <div class="call-header" id="callHeader">Current Patient Call</div>
                 
+                <!-- Emergency Tag Badge -->
+                <div id="emergencyTag" class="emergency-badge" style="display: none;">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                    URGENT EMERGENCY
+                </div>
+
                 <!-- Token ID -->
                 <div id="token" class="token-display">--</div>
                 
                 <!-- Counter Indicator -->
-                <div class="counter-display">
+                <div class="counter-display" id="counterDisplay">
                     Proceed to <span id="counter" class="counter-badge">--</span>
                 </div>
 
@@ -944,13 +1247,23 @@
                     <input type="text" class="test-input" id="testTokenInput" placeholder="Token" value="T-108">
                     <input type="number" class="test-input" id="testCounterInput" placeholder="Counter" value="5">
                 </div>
-                <button class="btn-primary" id="testBtn">
-                    <svg viewBox="0 0 24 24">
-                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
-                    </svg>
-                    Play Test Call
-                </button>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.75rem;">
+                    <button class="btn-primary" id="testBtn">
+                        <svg viewBox="0 0 24 24">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                        </svg>
+                        Normal Call
+                    </button>
+                    <button class="btn-primary btn-emergency-test" id="testEmergencyBtn">
+                        <svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        Emergency Call
+                    </button>
+                </div>
             </div>
 
         </div>
@@ -1176,22 +1489,247 @@
         // 2. UI Updates and WebSocket Stream Client
         // ==========================================================================
         
+        // Web Audio API emergency alert tone
+        function playEmergencyTone() {
+            if (!settings.soundEnabled) return;
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContextClass) return;
+                const audioCtx = new AudioContextClass();
+                const now = audioCtx.currentTime;
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = 'triangle';
+                // Urgent dual siren warble: 960Hz to 770Hz repeating
+                osc.frequency.setValueAtTime(960, now);
+                osc.frequency.setValueAtTime(770, now + 0.18);
+                osc.frequency.setValueAtTime(960, now + 0.36);
+                osc.frequency.setValueAtTime(770, now + 0.54);
+
+                const baseVol = Math.max(0.15, Math.min(1.0, parseFloat(settings.volume || 1)));
+                gain.gain.setValueAtTime(baseVol * 0.45, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.75);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.76);
+            } catch (err) {
+                console.warn("Emergency alert tone playback unavailable:", err);
+            }
+        }
+
+        // Speech sequence execution
+        function triggerSpeechAnnouncement(tokenId, counterId, isEmergency = false) {
+            if (!settings.soundEnabled || !synth) return;
+
+            // Clear any active/queued speak threads
+            synth.cancel();
+
+            const mode = settings.voiceMode;
+            const volume = parseFloat(settings.volume);
+            const rate = parseFloat(settings.rate);
+
+            // T-001 -> T 001, E-001 -> E 001 for cleaner speech pronunciation
+            const speechTokenId = tokenId.replace('-', ' ');
+
+            let englishText, hindiText;
+            if (isEmergency) {
+                englishText = `Attention please! Emergency token ${speechTokenId}, please proceed immediately to counter ${counterId}.`;
+                hindiText = `कृपया ध्यान दें! आपातकालीन टोकन ${speechTokenId}, तुरंत काउंटर नंबर ${counterId} पर जाएं।`;
+            } else {
+                englishText = `Token number ${speechTokenId}, please proceed to counter ${counterId}.`;
+                hindiText = `टोकन संख्या ${speechTokenId}, कृपया काउंटर नंबर ${counterId} पर जाएं।`;
+            }
+
+            let engUtterance = null;
+            let hinUtterance = null;
+
+            if (mode === 'both' || mode === 'english') {
+                engUtterance = new SpeechSynthesisUtterance(englishText);
+                engUtterance.lang = 'en-US';
+                engUtterance.volume = volume;
+                engUtterance.rate = rate;
+
+                // Bind English Voice
+                const selectedVoice = voices.find(v => v.name === settings.englishVoice);
+                if (selectedVoice) {
+                    engUtterance.voice = selectedVoice;
+                } else {
+                    const fallback = voices.find(v => v.lang.startsWith("en"));
+                    if (fallback) engUtterance.voice = fallback;
+                }
+
+                engUtterance.onstart = () => startSoundWaves();
+                engUtterance.onend = () => {
+                    if (mode === 'english') stopSoundWaves();
+                };
+                engUtterance.onerror = () => stopSoundWaves();
+            }
+
+            if (mode === 'both' || mode === 'hindi') {
+                hinUtterance = new SpeechSynthesisUtterance(hindiText);
+                hinUtterance.lang = 'hi-IN';
+                hinUtterance.volume = volume;
+                hinUtterance.rate = rate;
+
+                // Bind Hindi Voice
+                const selectedVoice = voices.find(v => v.name === settings.hindiVoice);
+                if (selectedVoice) {
+                    hinUtterance.voice = selectedVoice;
+                } else {
+                    const fallback = voices.find(v => v.lang.startsWith("hi") || v.lang.includes("IN"));
+                    if (fallback) hinUtterance.voice = fallback;
+                }
+
+                if (mode === 'hindi') {
+                    hinUtterance.onstart = () => startSoundWaves();
+                }
+                hinUtterance.onend = () => stopSoundWaves();
+                hinUtterance.onerror = () => stopSoundWaves();
+            }
+
+            const speakQueue = () => {
+                if (engUtterance) synth.speak(engUtterance);
+                if (hinUtterance) synth.speak(hinUtterance);
+            };
+
+            if (isEmergency) {
+                // Play emergency alert siren tone first, then begin speech announcement
+                playEmergencyTone();
+                setTimeout(speakQueue, 700);
+            } else {
+                speakQueue();
+            }
+        }
+
+        // ==========================================================================
+        // 2. Queue Delay & Emergency Countdown Management
+        // ==========================================================================
+        let delayTimerInterval = null;
+        let delayTotalSeconds = 480; // 8 minutes default
+        let delaySecondsRemaining = 480;
+        let isEmergencyActive = false;
+
+        function showEmergencyDelayBanner(counterId, delayMins = 8) {
+            isEmergencyActive = true;
+            const banner = document.getElementById("delayBanner");
+            const counterNumElem = document.getElementById("delayCounterNum");
+            const titleElem = document.getElementById("delayBannerTitle");
+            const tagElem = document.getElementById("delayBannerTag");
+            const subtextElem = document.getElementById("delaySubtext");
+            const statusElem = document.getElementById("delayCountdownStatus");
+
+            if (!banner) return;
+
+            if (counterNumElem) counterNumElem.innerText = `#${counterId}`;
+            if (titleElem) titleElem.innerText = "🚨 EMERGENCY IN PROGRESS — NORMAL QUEUE DELAYED";
+            if (tagElem) {
+                tagElem.innerText = "Est. Delay: ~5–10 Mins";
+                tagElem.style.background = "rgba(239, 68, 68, 0.2)";
+                tagElem.style.borderColor = "rgba(239, 68, 68, 0.4)";
+                tagElem.style.color = "#fca5a5";
+            }
+            if (subtextElem) {
+                subtextElem.innerHTML = `Doctor Counter <strong id="delayCounterNum">#${counterId}</strong> is currently attending an urgent emergency patient. Regular token calls are delayed by ~5 to 10 minutes.`;
+            }
+            if (statusElem) statusElem.innerText = "Normal queue paused";
+
+            banner.style.display = "block";
+
+            // Initialize countdown
+            const mins = Math.max(5, Math.min(15, parseInt(delayMins, 10) || 8));
+            delayTotalSeconds = mins * 60;
+            delaySecondsRemaining = delayTotalSeconds;
+            updateCountdownDisplay();
+
+            if (delayTimerInterval) clearInterval(delayTimerInterval);
+            delayTimerInterval = setInterval(() => {
+                if (delaySecondsRemaining > 0) {
+                    delaySecondsRemaining -= 1;
+                    updateCountdownDisplay();
+                } else {
+                    clearInterval(delayTimerInterval);
+                    delayTimerInterval = null;
+                    if (statusElem) statusElem.innerText = "Emergency consultation concluding";
+                }
+            }, 1000);
+        }
+
+        function updateCountdownDisplay() {
+            const clockElem = document.getElementById("delayCountdownText");
+            const progressElem = document.getElementById("delayProgressBar");
+
+            const m = Math.floor(delaySecondsRemaining / 60);
+            const s = delaySecondsRemaining % 60;
+            const formatted = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+            if (clockElem) clockElem.innerText = formatted;
+            if (progressElem && delayTotalSeconds > 0) {
+                const percent = Math.max(0, Math.min(100, (delaySecondsRemaining / delayTotalSeconds) * 100));
+                progressElem.style.width = `${percent}%`;
+            }
+        }
+
+        function resolveEmergencyDelay() {
+            if (delayTimerInterval) {
+                clearInterval(delayTimerInterval);
+                delayTimerInterval = null;
+            }
+            isEmergencyActive = false;
+
+            const banner = document.getElementById("delayBanner");
+            if (!banner || banner.style.display === "none") return;
+
+            const titleElem = document.getElementById("delayBannerTitle");
+            const tagElem = document.getElementById("delayBannerTag");
+            const subtextElem = document.getElementById("delaySubtext");
+            const clockElem = document.getElementById("delayCountdownText");
+            const statusElem = document.getElementById("delayCountdownStatus");
+            const progressElem = document.getElementById("delayProgressBar");
+
+            if (titleElem) titleElem.innerText = "✅ EMERGENCY RESOLVED — NORMAL QUEUE RESUMING";
+            if (tagElem) {
+                tagElem.innerText = "Queue Active";
+                tagElem.style.background = "rgba(16, 185, 129, 0.2)";
+                tagElem.style.borderColor = "rgba(16, 185, 129, 0.4)";
+                tagElem.style.color = "#6ee7b7";
+            }
+            if (subtextElem) {
+                subtextElem.innerHTML = "Emergency consultation completed. Calling regular waiting patients now.";
+            }
+            if (clockElem) clockElem.innerText = "RESUMED";
+            if (statusElem) statusElem.innerText = "Regular calling active";
+            if (progressElem) progressElem.style.width = "0%";
+
+            setTimeout(() => {
+                if (!isEmergencyActive && banner) {
+                    banner.style.display = "none";
+                }
+            }, 3500);
+        }
+
+        // ==========================================================================
+        // 3. UI Updates and WebSocket Stream Client
+        // ==========================================================================
+        
         // Push announcement calls to History Grid
-        function addCallToHistory(tokenId, counterId) {
-            // Remove duplicate if it was already in history (e.g. recalled)
+        function addCallToHistory(tokenId, counterId, isEmergency = false) {
             const duplicateIndex = recentCalls.findIndex(c => c.token === tokenId);
             if (duplicateIndex > -1) {
                 recentCalls.splice(duplicateIndex, 1);
             }
 
-            // Unshift new item
             recentCalls.unshift({
                 token: tokenId,
                 counter: counterId,
+                isEmergency: isEmergency,
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
             });
 
-            // Keep only latest 5
             if (recentCalls.length > 5) {
                 recentCalls.pop();
             }
@@ -1211,8 +1749,9 @@
             recentCalls.forEach(call => {
                 const item = document.createElement("div");
                 item.className = "history-item";
+                const emergPill = call.isEmergency ? '<span class="history-tag-emergency">EMERGENCY</span>' : '';
                 item.innerHTML = `
-                    <div class="history-token">${call.token}</div>
+                    <div class="history-token">${call.token}${emergPill}</div>
                     <div class="history-counter">Counter <span>${call.counter}</span></div>
                     <div style="font-size: 0.75rem; color: var(--text-dim);">${call.time}</div>
                 `;
@@ -1221,16 +1760,40 @@
         }
 
         // Primary visual content display updater
-        function displayCalledToken(tokenId, counterId) {
+        function displayCalledToken(tokenId, counterId, isEmergency = false, delayMins = 8) {
             const tokenElem = document.getElementById("token");
             const counterElem = document.getElementById("counter");
+            const callCard = document.getElementById("activeCallCard");
+            const callHeader = document.getElementById("callHeader");
+            const emergencyTag = document.getElementById("emergencyTag");
+            const soundWaves = document.getElementById("soundWaves");
 
-            // Update main view
+            // Update main view text
             tokenElem.innerText = tokenId;
             counterElem.innerText = counterId;
 
+            if (isEmergency) {
+                callCard.classList.add("emergency-mode");
+                tokenElem.classList.add("emergency-text");
+                counterElem.classList.add("emergency-counter");
+                if (emergencyTag) emergencyTag.style.display = "inline-flex";
+                if (callHeader) callHeader.innerHTML = "🚨 EMERGENCY TOKEN CALLED";
+                if (soundWaves) soundWaves.classList.add("emergency");
+
+                showEmergencyDelayBanner(counterId, delayMins);
+            } else {
+                callCard.classList.remove("emergency-mode");
+                tokenElem.classList.remove("emergency-text");
+                counterElem.classList.remove("emergency-counter");
+                if (emergencyTag) emergencyTag.style.display = "none";
+                if (callHeader) callHeader.innerText = "Current Patient Call";
+                if (soundWaves) soundWaves.classList.remove("emergency");
+
+                resolveEmergencyDelay();
+            }
+
             // Trigger bilingual voice callout
-            triggerSpeechAnnouncement(tokenId, counterId);
+            triggerSpeechAnnouncement(tokenId, counterId, isEmergency);
         }
 
         // Setup WebSocket connection
@@ -1261,15 +1824,27 @@
                     const data = JSON.parse(event.data);
                     
                     if (data.event === "TOKEN_CALLED") {
-                        // If it's a new call, first log current called token to history if active
                         const currentToken = document.getElementById("token").innerText;
                         const currentCounter = document.getElementById("counter").innerText;
+                        const callCard = document.getElementById("activeCallCard");
+                        const currentIsEmerg = callCard && callCard.classList.contains("emergency-mode");
                         if (currentToken !== "--" && currentToken !== "") {
-                            addCallToHistory(currentToken, currentCounter);
+                            addCallToHistory(currentToken, currentCounter, currentIsEmerg);
                         }
 
+                        const isEmergency = Boolean(
+                            data.is_emergency ||
+                            data.priority === "emergency" ||
+                            (data.token_id && data.token_id.startsWith("E-"))
+                        );
+                        const delayMins = data.delay_minutes || (isEmergency ? 8 : 0);
+
                         // Display new called token
-                        displayCalledToken(data.token_id, data.counter_id);
+                        displayCalledToken(data.token_id, data.counter_id, isEmergency, delayMins);
+                    } else if (data.event === "TOKEN_COMPLETED") {
+                        if (data.was_emergency) {
+                            resolveEmergencyDelay();
+                        }
                     }
                 } catch (e) {
                     console.error("Failed to parse websocket event data:", e);
@@ -1288,8 +1863,27 @@
             };
         }
 
+        // Query initial emergency status on launch
+        async function checkInitialEmergencyStatus() {
+            try {
+                let apiUrl = '/tokens/emergency_status';
+                if (window.location.protocol === 'file:') {
+                    apiUrl = 'http://localhost:8000/tokens/emergency_status';
+                }
+                const res = await fetch(apiUrl);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.is_emergency_active) {
+                        showEmergencyDelayBanner("1", data.delay_minutes || 8);
+                    }
+                }
+            } catch (err) {
+                // Ignore initial offline errors
+            }
+        }
+
         // ==========================================================================
-        // 3. UI Controls Handlers & Drawers Initialization
+        // 4. UI Controls Handlers & Drawers Initialization
         // ==========================================================================
         
         // Drawer toggle controls
@@ -1348,17 +1942,28 @@
             saveSettings();
         });
 
-        // Test Call trigger
+        // Test Call triggers
         document.getElementById("testBtn").addEventListener("click", () => {
-            const tInput = document.getElementById("testTokenInput").value || "T-100";
-            const cInput = document.getElementById("testCounterInput").value || "1";
-            triggerSpeechAnnouncement(tInput, cInput);
+            const tInput = document.getElementById("testTokenInput").value || "T-108";
+            const cInput = document.getElementById("testCounterInput").value || "5";
+            displayCalledToken(tInput, cInput, false);
         });
+
+        const testEmergBtn = document.getElementById("testEmergencyBtn");
+        if (testEmergBtn) {
+            testEmergBtn.addEventListener("click", () => {
+                const tInput = document.getElementById("testTokenInput").value || "E-001";
+                const cInput = document.getElementById("testCounterInput").value || "1";
+                const formattedToken = tInput.startsWith("E-") ? tInput : ("E-" + tInput.replace(/^[A-Za-z]-?/, ''));
+                displayCalledToken(formattedToken, cInput, true, 8);
+            });
+        }
 
         // Initialize state
         window.addEventListener("DOMContentLoaded", () => {
             loadSettings();
             connectWebSocket();
+            checkInitialEmergencyStatus();
         });
 
     </script>

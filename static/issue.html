@@ -278,8 +278,8 @@
 
     .selector-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.75rem;
+      grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+      gap: 1.5rem;
     }
 
     @media (max-width: 768px) {
@@ -319,6 +319,13 @@
       box-shadow: 0 25px 50px -10px rgba(244, 63, 94, 0.25);
     }
 
+    .issue-option-card.emergency:hover {
+      transform: translateY(-6px) scale(1.015);
+      background: rgba(30, 41, 59, 0.85);
+      border-color: rgba(239, 68, 68, 0.6);
+      box-shadow: 0 25px 50px -10px rgba(239, 68, 68, 0.35);
+    }
+
     .icon-badge {
       width: 76px;
       height: 76px;
@@ -345,6 +352,13 @@
       color: var(--rose-danger);
       border: 1px solid rgba(244, 63, 94, 0.25);
       box-shadow: 0 10px 25px rgba(244, 63, 94, 0.2);
+    }
+
+    .emergency .icon-badge {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      box-shadow: 0 10px 25px rgba(239, 68, 68, 0.25);
     }
 
     .icon-badge svg {
@@ -386,6 +400,12 @@
       color: var(--rose-danger);
     }
 
+    .emergency .tag-pill {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
     /* Touch Buttons */
     .btn-issue {
       width: 100%;
@@ -414,6 +434,11 @@
     .priority .btn-issue {
       background: var(--rose-gradient);
       box-shadow: 0 10px 25px rgba(244, 63, 94, 0.4);
+    }
+
+    .emergency .btn-issue {
+      background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+      box-shadow: 0 10px 25px rgba(239, 68, 68, 0.45);
     }
 
     .btn-issue:active {
@@ -793,6 +818,31 @@
           </button>
         </div>
 
+        <!-- OPTION 3: EMERGENCY / CRITICAL TRIAGE -->
+        <div class="issue-option-card emergency" onclick="triggerIssueToken('emergency')">
+          <div class="icon-badge">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          </div>
+
+          <div class="card-info">
+            <span class="tag-pill">Red Triage / Critical</span>
+            <h3>Emergency Care</h3>
+            <p>Acute trauma, urgent clinical attention, distress & immediate doctor review.</p>
+          </div>
+
+          <button class="btn-issue" id="btnIssueEmergency">
+            <div class="spinner"></div>
+            <span>GET EMERGENCY TOKEN</span>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+            </svg>
+          </button>
+        </div>
+
       </div>
 
       <!-- BOTTOM CONFIG / ENDPOINT DRAWER -->
@@ -987,7 +1037,12 @@
        ------------------------------------------------------------------ */
     async function issueToken(priority) {
       const cleanBase = BASE_URL.replace(/\/+$/, '');
-      const pValue = (priority === true || priority === 'true') ? 'priority' : 'general';
+      let pValue = 'general';
+      if (priority === 'emergency' || priority === 'urgent') {
+        pValue = 'emergency';
+      } else if (priority === true || priority === 'priority' || priority === 'true') {
+        pValue = 'priority';
+      }
       const targetUrl = `${cleanBase}/tokens/issue?priority=${pValue}`;
 
       // Mandatory fetch call with ngrok bypass header
@@ -1018,45 +1073,62 @@
     /* ------------------------------------------------------------------
        4. UI Handler: Trigger Token Issue
        ------------------------------------------------------------------ */
-    async function triggerIssueToken(isPriority) {
+    async function triggerIssueToken(priorityType) {
       const btnReg = document.getElementById('btnIssueRegular');
       const btnPri = document.getElementById('btnIssuePriority');
-      const activeBtn = isPriority ? btnPri : btnReg;
+      const btnEmerg = document.getElementById('btnIssueEmergency');
 
-      if (btnReg.classList.contains('loading') || btnPri.classList.contains('loading')) return;
+      let activeBtn = btnReg;
+      if (priorityType === 'emergency') activeBtn = btnEmerg;
+      else if (priorityType === true || priorityType === 'priority') activeBtn = btnPri;
 
-      activeBtn.classList.add('loading');
+      if ((btnReg && btnReg.classList.contains('loading')) ||
+          (btnPri && btnPri.classList.contains('loading')) ||
+          (btnEmerg && btnEmerg.classList.contains('loading'))) return;
+
+      if (activeBtn) activeBtn.classList.add('loading');
 
       try {
-        const data = await issueToken(isPriority);
+        const data = await issueToken(priorityType);
 
-        const tokenNum = data.token_id || data.token || data.token_number || data.number || data.id || (isPriority ? 'P-101' : 'A-101');
-        const queuePos = data.queue_position ?? data.position ?? data.ahead ?? 3;
-        const waitTime = data.estimated_wait ?? data.wait_time ?? (queuePos * 5 + ' mins');
+        let defaultToken = 'T-101';
+        if (priorityType === 'emergency') defaultToken = 'E-001';
+        else if (priorityType === true || priorityType === 'priority') defaultToken = 'T-101';
 
-        displayTokenModal(tokenNum, isPriority, queuePos, waitTime);
+        const tokenNum = data.token_id || data.token || data.token_number || data.number || data.id || defaultToken;
+        const queuePos = data.queue_position ?? data.position ?? data.ahead ?? (priorityType === 'emergency' ? 1 : 3);
+        const waitTime = data.estimated_wait ?? data.wait_time ?? (priorityType === 'emergency' ? 'Immediate / 0 mins' : (queuePos * 5 + ' mins'));
+
+        displayTokenModal(tokenNum, priorityType, queuePos, waitTime);
         playToneChime();
 
       } catch (err) {
         console.error('Error issuing token:', err);
 
         // Fallback Demo Mode if backend server is unreachable
-        const demoPrefix = isPriority ? 'P-' : 'A-';
-        const demoToken = demoPrefix + Math.floor(100 + Math.random() * 899);
-        const demoPos = Math.floor(1 + Math.random() * 5);
-        const demoWait = (demoPos * 5) + ' mins';
+        let demoToken = 'T-' + Math.floor(100 + Math.random() * 899);
+        let demoPos = Math.floor(1 + Math.random() * 5);
+        let demoWait = (demoPos * 5) + ' mins';
 
-        displayTokenModal(demoToken + ' (Demo)', isPriority, demoPos, demoWait);
+        if (priorityType === 'emergency') {
+          demoToken = 'E-' + Math.floor(100 + Math.random() * 899);
+          demoPos = 1;
+          demoWait = 'Immediate / 0 mins';
+        } else if (priorityType === true || priorityType === 'priority') {
+          demoToken = 'P-' + Math.floor(100 + Math.random() * 899);
+        }
+
+        displayTokenModal(demoToken + ' (Demo)', priorityType, demoPos, demoWait);
         playToneChime();
       } finally {
-        activeBtn.classList.remove('loading');
+        if (activeBtn) activeBtn.classList.remove('loading');
       }
     }
 
     /* ------------------------------------------------------------------
        5. Modal Display & Auto Reset Timer
        ------------------------------------------------------------------ */
-    function displayTokenModal(tokenNum, isPriority, queuePos, waitTime) {
+    function displayTokenModal(tokenNum, priorityType, queuePos, waitTime) {
       const modal = document.getElementById('tokenModal');
       const tagElem = document.getElementById('modalTokenTypeTag');
       const numElem = document.getElementById('modalTokenNumber');
@@ -1071,7 +1143,12 @@
       const now = new Date();
       timeElem.textContent = `Issued at ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 
-      if (isPriority) {
+      if (priorityType === 'emergency' || (typeof tokenNum === 'string' && tokenNum.startsWith('E-'))) {
+        tagElem.textContent = '🚨 Red Triage / Emergency Queue';
+        tagElem.style.background = 'rgba(239, 68, 68, 0.2)';
+        tagElem.style.color = '#fca5a5';
+        tagElem.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+      } else if (priorityType === true || priorityType === 'priority' || (typeof tokenNum === 'string' && tokenNum.startsWith('P-'))) {
         tagElem.textContent = 'Priority / Senior Queue';
         tagElem.style.background = 'rgba(244, 63, 94, 0.15)';
         tagElem.style.color = 'var(--rose-danger)';
