@@ -569,6 +569,97 @@
       transform: translateY(1px);
     }
 
+    .emerg-count-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.65rem;
+      border-radius: 9999px;
+      margin-left: auto;
+      background: rgba(255, 255, 255, 0.15);
+      color: #f1f5f9;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      letter-spacing: 0.03em;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+    }
+
+    .emerg-count-badge.has-waiting {
+      background: #ef4444;
+      color: #ffffff;
+      border-color: #fca5a5;
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.85);
+      animation: pulseBadge 1s infinite alternate;
+    }
+
+    @keyframes pulseBadge {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.08); }
+    }
+
+    /* Toast Notification System */
+    .toast-container {
+      position: fixed;
+      top: 1.5rem;
+      right: 1.5rem;
+      z-index: 999999;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      pointer-events: none;
+    }
+
+    .toast {
+      pointer-events: auto;
+      min-width: 280px;
+      max-width: 420px;
+      padding: 0.85rem 1.15rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      animation: slideInToast 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      transition: all 0.3s ease;
+    }
+
+    .toast.warning {
+      background: rgba(245, 158, 11, 0.22);
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      color: #fde68a;
+    }
+
+    .toast.danger {
+      background: rgba(239, 68, 68, 0.25);
+      border: 1px solid rgba(239, 68, 68, 0.55);
+      color: #fecaca;
+    }
+
+    .toast.success {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.5);
+      color: #a7f3d0;
+    }
+
+    .toast.info {
+      background: rgba(56, 189, 248, 0.2);
+      border: 1px solid rgba(56, 189, 248, 0.5);
+      color: #bae6fd;
+    }
+
+    @keyframes slideInToast {
+      from { opacity: 0; transform: translateX(40px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes fadeOutToast {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(40px); }
+    }
+
     /* Doctor Emergency Active Banner */
     .doctor-emergency-notice {
       background: radial-gradient(circle at 10% 50%, rgba(239, 68, 68, 0.2) 0%, rgba(15, 23, 42, 0.9) 85%);
@@ -1076,14 +1167,15 @@
             </button>
 
             <!-- CALL EMERGENCY BUTTON -->
-            <button class="btn-call-emergency" id="btnCallEmergency" onclick="callEmergency()" title="Call urgent emergency case and delay regular queue">
+            <button class="btn-call-emergency" id="btnCallEmergency" onclick="callEmergency()" title="Call urgent emergency case from queue">
               <div class="spinner"></div>
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 20px; height: 20px;">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width: 20px; height: 20px; flex-shrink: 0;">
                 <circle cx="12" cy="12" r="10"></circle>
                 <line x1="12" y1="8" x2="12" y2="12"></line>
                 <line x1="12" y1="16" x2="12.01" y2="16"></line>
               </svg>
-              <span class="btn-text">CALL EMERGENCY (DELAY QUEUE ~5–10M)</span>
+              <span class="btn-text">CALL EMERGENCY PATIENT</span>
+              <span class="emerg-count-badge" id="emergCountBadge">0 Waiting</span>
             </button>
 
             <div class="kbd-shortcut-hint">
@@ -1241,6 +1333,9 @@
     </div>
   </div>
 
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
   <!-- ==========================================================================
      JavaScript Logic Integration
      ========================================================================== -->
@@ -1277,6 +1372,9 @@
 
       logActivity('System initialized. Counter #' + currentCounterId + ' active.', 'system');
       updateSkippedButtonCount();
+      connectDoctorWs();
+      refreshEmergencyQueueCount();
+      setInterval(refreshEmergencyQueueCount, 4000);
     });
 
     /* Counter Control */
@@ -1320,6 +1418,8 @@
 
       logActivity(`Updated Base URL: ${BASE_URL}`, 'system');
       setStatusPill('URL Updated', 'success');
+      connectDoctorWs();
+      refreshEmergencyQueueCount();
     }
 
     /* Core API Function: callNext() */
@@ -1348,7 +1448,9 @@
           if (response.status === 404) {
             updateTokenDisplay('---');
             logActivity('Queue is empty. No patients waiting.', 'system');
-            setStatusPill('Connected', 'success');
+            setStatusPill('Queue Empty', 'warning');
+            showToast('Queue is empty. No patients waiting.', 'info');
+            refreshEmergencyQueueCount();
             return;
           }
           throw new Error(`Server status ${response.status} (${response.statusText || 'Error'})`);
@@ -1371,6 +1473,7 @@
         playAlertChime();
         setStatusPill(isEmergency ? 'Emergency Active' : 'Connected', isEmergency ? 'danger' : 'success');
         logActivity(isEmergency ? `🚨 Called EMERGENCY Token #${tokenNum}` : `Called Token #${tokenNum}`, isEmergency ? 'error' : 'call');
+        refreshEmergencyQueueCount();
 
       } catch (err) {
         console.error('Error in callNext():', err);
@@ -1409,33 +1512,53 @@
         });
 
         if (!response.ok) {
-          throw new Error(`Server status ${response.status} (${response.statusText || 'Error'})`);
+          if (response.status === 404) {
+            logActivity('⚠️ No emergency patients waiting in queue. Emergency queue is empty.', 'system');
+            setStatusPill('Emergency Queue Empty', 'warning');
+            showToast('⚠️ No emergency tokens in queue. Emergency queue is empty.', 'warning');
+            if (lastCalledTokenNum === '---') {
+              updateTokenDisplay('---');
+            }
+            refreshEmergencyQueueCount();
+            return;
+          }
+          let errorDetail = `Server status ${response.status} (${response.statusText || 'Error'})`;
+          try {
+            const errData = await response.json();
+            if (errData && errData.detail) errorDetail = errData.detail;
+          } catch (_) {}
+          throw new Error(errorDetail);
         }
 
         const textResponse = await response.text();
-        let tokenNum = 'E-001';
+        let tokenNum = '---';
 
         try {
           const data = JSON.parse(textResponse);
-          tokenNum = data.token_id ?? (data.data && data.data.token_id) ?? 'E-001';
+          tokenNum = data.token_id ?? (data.data && data.data.token_id) ?? '---';
         } catch (jsonErr) {
-          tokenNum = textResponse.trim() || 'E-001';
+          tokenNum = textResponse.trim() || '---';
+        }
+
+        if (!tokenNum || tokenNum === '---') {
+          logActivity('⚠️ No emergency patients waiting in queue. Emergency queue is empty.', 'system');
+          setStatusPill('Emergency Queue Empty', 'warning');
+          showToast('⚠️ No emergency tokens in queue. Emergency queue is empty.', 'warning');
+          refreshEmergencyQueueCount();
+          return;
         }
 
         updateTokenDisplay(tokenNum, true);
         playAlertChime();
         setStatusPill('Emergency Active', 'danger');
         logActivity(`🚨 CALLED EMERGENCY Token #${tokenNum} (Regular queue delayed ~5–10m)`, 'error');
+        refreshEmergencyQueueCount();
 
       } catch (err) {
         console.error('Error in callEmergency():', err);
-        logActivity(`Emergency API Error: ${err.message}`, 'error');
-        setStatusPill('Emergency (Demo)', 'danger');
-
-        const demoEmergency = 'E-' + Math.floor(100 + Math.random() * 899);
-        updateTokenDisplay(demoEmergency, true);
-        playAlertChime();
-        logActivity(`[Demo Mode] Simulated Emergency Token #${demoEmergency}`, 'system');
+        logActivity(`Emergency Call Error: ${err.message}`, 'error');
+        setStatusPill('Error', 'danger');
+        showToast(`Emergency Call Error: ${err.message}`, 'danger');
       } finally {
         if (btn) btn.classList.remove('loading');
       }
@@ -1453,7 +1576,9 @@
 
       display.textContent = tokenNum;
       const now = new Date();
-      timeElem.textContent = `Last called: ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
+      timeElem.textContent = tokenNum === '---'
+        ? 'No active patient'
+        : `Last called: ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
 
       if (isEmerg) {
         if (notice) notice.style.display = 'flex';
@@ -1466,7 +1591,7 @@
         display.style.webkitTextFillColor = 'transparent';
       } else {
         if (notice) notice.style.display = 'none';
-        tagElem.textContent = 'Calling Patient';
+        tagElem.textContent = tokenNum === '---' ? 'Queue Empty' : 'Calling Patient';
         tagElem.style.background = 'rgba(56, 189, 248, 0.15)';
         tagElem.style.color = 'var(--cyan-primary)';
         tagElem.style.borderColor = 'rgba(56, 189, 248, 0.3)';
@@ -1719,6 +1844,106 @@
       return str.replace(/[&<>"']/g, function(m) {
         return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
       });
+    }
+
+    /* Toast Notification System */
+    function showToast(message, type = 'info') {
+      let container = document.getElementById('toastContainer');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+      }
+
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+
+      let icon = 'ℹ️';
+      if (type === 'warning') icon = '⚠️';
+      else if (type === 'danger') icon = '🚨';
+      else if (type === 'success') icon = '✅';
+
+      toast.innerHTML = `
+        <span style="font-size: 1.15rem; flex-shrink: 0;">${icon}</span>
+        <span style="flex: 1; line-height: 1.35;">${escapeHtml(message)}</span>
+      `;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = 'fadeOutToast 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+        setTimeout(() => toast.remove(), 320);
+      }, 4500);
+    }
+
+    /* Real-Time Emergency Queue Count Status */
+    async function refreshEmergencyQueueCount() {
+      try {
+        const cleanBase = BASE_URL.replace(/\/+$/, '');
+        const targetUrl = `${cleanBase}/tokens/emergency_status`;
+        const res = await fetch(targetUrl, {
+          headers: { 'ngrok-skip-browser-warning': 'true' }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const count = typeof data.waiting_emergency_count === 'number' ? data.waiting_emergency_count : 0;
+        const badge = document.getElementById('emergCountBadge');
+        if (badge) {
+          if (count > 0) {
+            badge.textContent = `${count} Waiting`;
+            badge.classList.add('has-waiting');
+          } else {
+            badge.textContent = `0 Waiting`;
+            badge.classList.remove('has-waiting');
+          }
+        }
+      } catch (e) {
+        // Silently catch background polling errors
+      }
+    }
+
+    /* Doctor Console WebSocket Connection for Instant Badge Sync */
+    let doctorWs = null;
+    function connectDoctorWs() {
+      try {
+        if (doctorWs) {
+          try { doctorWs.close(); } catch (_) {}
+        }
+        const cleanBase = BASE_URL.replace(/\/+$/, '');
+        let wsUrl;
+        if (cleanBase.startsWith('https://')) {
+          wsUrl = cleanBase.replace('https://', 'wss://') + '/ws';
+        } else if (cleanBase.startsWith('http://')) {
+          wsUrl = cleanBase.replace('http://', 'ws://') + '/ws';
+        } else if (window.location.protocol === 'file:') {
+          wsUrl = 'ws://localhost:8000/ws';
+        } else {
+          const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          wsUrl = `${wsProto}//${window.location.host}/ws`;
+        }
+
+        doctorWs = new WebSocket(wsUrl);
+        doctorWs.onopen = () => {
+          refreshEmergencyQueueCount();
+        };
+        doctorWs.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (['TOKEN_ISSUED', 'TOKEN_CALLED', 'TOKEN_COMPLETED'].includes(data.event)) {
+              refreshEmergencyQueueCount();
+            }
+          } catch (_) {}
+        };
+        doctorWs.onclose = () => {
+          setTimeout(connectDoctorWs, 5000);
+        };
+        doctorWs.onerror = () => {
+          try { doctorWs.close(); } catch (_) {}
+        };
+      } catch (err) {
+        console.warn('Doctor WebSocket connection error:', err);
+      }
     }
   </script>
 </body>

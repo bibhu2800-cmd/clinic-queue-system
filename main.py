@@ -165,30 +165,23 @@ async def call_next_token(counter_id: int):
     await manager.broadcast(json.dumps(payload))
     return {"status": "success", "data": payload}
 
-# Endpoint 2B: Call Emergency Token On-Demand (Called by Doctor Console)
+# Endpoint 2B: Call Emergency Token (Called by Doctor Console)
 @app.post("/tokens/call_emergency")
 async def call_emergency_token(counter_id: int):
-    # Complete previous patient first
-    await complete_active_token_on_counter(counter_id)
-
     # Check if there is an existing emergency waiting in queue
     token_id = await r.lpop("opd:queue:emergency")
     if not token_id:
-        # Create an on-demand emergency token
-        token_num = await r.incr("opd:token_counter:emergency")
-        token_id = f"E-{token_num:03d}"
-        await r.hset(f"token:{token_id}", mapping={
-            "token_id": token_id,
-            "priority": "emergency",
-            "status": "CALLED",
-            "counter_id": str(counter_id),
-            "estimated_wait": "Immediate / 0 mins"
-        })
-    else:
-        await r.hset(f"token:{token_id}", mapping={
-            "status": "CALLED",
-            "counter_id": str(counter_id)
-        })
+        raise HTTPException(status_code=404, detail="No emergency patients waiting in queue.")
+
+    # Complete previous patient first only when emergency token exists
+    await complete_active_token_on_counter(counter_id)
+
+    token_priority = await r.hget(f"token:{token_id}", "priority")
+
+    await r.hset(f"token:{token_id}", mapping={
+        "status": "CALLED",
+        "counter_id": str(counter_id)
+    })
 
     await r.set(f"opd:counter:{counter_id}:active", token_id)
     await r.set("opd:emergency_active", token_id)
@@ -197,7 +190,7 @@ async def call_emergency_token(counter_id: int):
         "event": "TOKEN_CALLED",
         "token_id": token_id,
         "counter_id": counter_id,
-        "priority": "emergency",
+        "priority": token_priority or "emergency",
         "is_emergency": True,
         "delay_minutes": 8
     }

@@ -71,15 +71,42 @@ async def run_tests():
     assert call3["token_id"] == t1["token_id"]
     assert call3["is_emergency"] is False
 
-    # 10. Call on-demand emergency directly at counter
+    # 10. Attempt to call emergency when emergency queue is empty (MUST fail with 404, NO auto-generation!)
+    from fastapi import HTTPException
+    empty_error_raised = False
+    try:
+        await call_emergency_token(counter_id=2)
+    except HTTPException as e:
+        empty_error_raised = True
+        assert e.status_code == 404
+        assert "No emergency patients waiting" in e.detail
+        print(f"10. Empty emergency queue test PASSED: correctly raised 404 ({e.detail})")
+    assert empty_error_raised, "Expected HTTPException 404 when emergency queue is empty, but no exception was raised!"
+
+    # 11. Now explicitly issue an emergency token from kiosk/reception
+    t4 = await issue_token(priority="emergency")
+    print(f"11. Issued legitimate emergency token: {t4['token_id']}")
+    assert t4["token_id"].startswith("E-")
+
+    # 12. Calling emergency token now succeeds with the issued token
     res_emg = await call_emergency_token(counter_id=2)
     emg = res_emg["data"]
-    print(f"10. On-demand emergency: {emg['token_id']}, is_emergency: {emg['is_emergency']}, delay: {emg['delay_minutes']}")
-    assert emg["token_id"].startswith("E-")
+    print(f"12. Called waiting emergency token: {emg['token_id']}, is_emergency: {emg['is_emergency']}, delay: {emg['delay_minutes']}")
+    assert emg["token_id"] == t4["token_id"]
     assert emg["is_emergency"] is True
     assert emg["delay_minutes"] == 8
 
-    print("\n✅ ALL 10 TESTS PASSED PERFECTLY!")
+    # 13. Calling emergency again immediately must fail with 404 since queue is empty again
+    empty_again = False
+    try:
+        await call_emergency_token(counter_id=2)
+    except HTTPException as e:
+        empty_again = True
+        assert e.status_code == 404
+        print(f"13. Immediate second emergency call correctly rejected with 404: {e.detail}")
+    assert empty_again, "Expected second call to fail with 404 since emergency queue should now be empty!"
+
+    print("\n✅ ALL TESTS PASSED PERFECTLY - NO AUTO GENERATION OF EMERGENCY TOKENS!")
 
 if __name__ == "__main__":
     asyncio.run(run_tests())
